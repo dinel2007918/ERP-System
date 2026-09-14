@@ -7,6 +7,7 @@ import { useState } from "react";
 import NewItem from "./pages/products/NewItem";
 import ItemInquiry from "./pages/products/ItemInquiry";
 import OpenStock from "./pages/products/OpenStock";
+import OEM from "./pages/products/OEM";
 
 // sales
 import SalesInvoice from "./pages/sales/SalesInvoice";
@@ -31,6 +32,29 @@ import PurchaseInvoiceManagement from "./pages/purchase/PurchaseInvoiceManagemen
 import NewUser from "./pages/users/NewUser";
 import UserAccess from "./pages/users/UserAccess";
 
+const pageTitles: Record<string, string> = {
+    "dashboard": "Dashboard",
+    "new-item": "New Item",
+    "item-inquiry": "Item Inquiry",
+    "open-stock": "Open Stock",
+    "OEM": "OEM",
+    "invoice": "Sales Invoice",
+    "cashbill": "Sales Cancel",
+    "customerbill": "Sales Return",
+    "payment": "Sales Return Settle",
+    "payment-report": "Sales Report",
+    "new-customer": "New Customer",
+    "customer-inquiry": "Customer Inquiry",
+    "customer-payment": "Customer Payment",
+    "cheque-status": "Cheque Status",
+    "customer-report": "Customer Report",
+    "purchase-invoice": "Purchase Invoice",
+    "purchase-return": "Purchase Invoice Return",
+    "purchase-management": "Purchase Invoice Management",
+    "new-user": "New User",
+    "user-access": "User Access",
+};
+
 function App() {
     const [page, setPage] = useState("dashboard");
 
@@ -39,7 +63,7 @@ function App() {
             <Sidebar setPage={setPage} />
 
             <div className="main-content">
-                <Header />
+                <Header title={pageTitles[page] || "Dashboard"} />
 
                 <div className="page-content">
                     {page === "dashboard" && <Dashboard />}
@@ -48,6 +72,7 @@ function App() {
                     {page === "new-item" && <NewItem />}
                     {page === "item-inquiry" && <ItemInquiry />}
                     {page === "open-stock" && <OpenStock />}
+                    {page === "OEM" && <OEM />}
 
                     {/* sales */}
                     {page === "invoice" && <SalesInvoice />}

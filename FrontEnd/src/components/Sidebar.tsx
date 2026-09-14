@@ -22,6 +22,7 @@ function Sidebar({ setPage }: SidebarProps) {
                     <button onClick={() => setPage("new-item")}>New Item</button>
                     <button onClick={() => setPage("item-inquiry")}>Item Inquiry</button>
                     <button onClick={() => setPage("open-stock")}>Open Stock</button>
+                    <button onClick={() => setPage("OEM")}>OEM</button>
                 </div>
             )}
 

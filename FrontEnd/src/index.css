@@ -170,19 +170,11 @@ button {
   overflow-y: auto;
 }
 
-/* Sample Page styling for empty pages */
 .page-content>div {
   background: #ffffff;
   border-radius: 12px;
   padding: 40px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03);
-  font-size: 1.5rem;
-  font-weight: 500;
-  color: #64748b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
   animation: fadeIn 0.4s ease-out;
 }
 
@@ -196,4 +188,100 @@ button {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* Form Styles */
+.form-container {
+  max-width: 800px;
+  width: 100%;
+}
+
+.form-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 24px;
+}
+
+.premium-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #f8fafc;
+  color: #1e293b;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #38bdf8;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 24px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 24px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #38bdf8;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #0ea5e9;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background-color: #e2e8f0;
+  color: #475569;
+}
+
+.btn-secondary:hover {
+  background-color: #cbd5e1;
 }
