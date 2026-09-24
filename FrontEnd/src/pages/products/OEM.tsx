@@ -1,61 +1,112 @@
 import { useState } from "react";
 
-interface Item {
-    code: string;
-    name: string;
-    active: boolean;
-}
-
 export default function OEM() {
     // Group State
     const [groupCode, setGroupCode] = useState("");
     const [groupName, setGroupName] = useState("");
     const [groupActive, setGroupActive] = useState(true);
-    const [groups, setGroups] = useState<Item[]>([]);
 
     // Type State
     const [typeCode, setTypeCode] = useState("");
     const [typeName, setTypeName] = useState("");
     const [typeActive, setTypeActive] = useState(true);
-    const [types, setTypes] = useState<Item[]>([]);
 
     // Brand State
     const [brandCode, setBrandCode] = useState("");
     const [brandName, setBrandName] = useState("");
     const [brandActive, setBrandActive] = useState(true);
-    const [brands, setBrands] = useState<Item[]>([]);
 
     // Form Handlers
-    const handleSaveGroup = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSaveGroup = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (groupCode.trim() && groupName.trim()) {
-            setGroups([...groups, { code: groupCode.trim(), name: groupName.trim(), active: groupActive }]);
-            setGroupCode("");
-            setGroupName("");
-            setGroupActive(true);
-            alert("Group saved successfully!");
+            const group = {
+                groupCode: groupCode.trim(),
+                groupName: groupName.trim(),
+                active: groupActive
+            };
+            const response = await fetch("http://localhost:5005/api/group_code",
+                {
+                    method: "post",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(group)
+                })
+            const data = await response.json();
+            console.log("Group Response:", data);
+
+            if (data.success) {
+                // Clear inputs after successful save
+                setGroupCode("");
+                setGroupName("");
+                setGroupActive(true);
+                alert("Group saved successfully!");
+            } else {
+                alert("Error: " + data.message);
+            }
         }
     };
 
-    const handleSaveType = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSaveType = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (typeCode.trim() && typeName.trim()) {
-            setTypes([...types, { code: typeCode.trim(), name: typeName.trim(), active: typeActive }]);
-            setTypeCode("");
-            setTypeName("");
-            setTypeActive(true);
-            alert("Type saved successfully!");
+            const type_code = {
+                typeCode: typeCode.trim(),
+                typeName: typeName.trim(),
+                active: typeActive
+            };
+            const response = await fetch("http://localhost:5005/api/type_code",
+                {
+                    method: "post",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(type_code)
+                })
+            const data = await response.json();
+            console.log("Type Response:", data);
+
+            if (data.success) {
+                // Clear inputs after successful save
+                setTypeCode("");
+                setTypeName("");
+                setTypeActive(true);
+                alert("Type saved successfully!");
+            } else {
+                alert("Error: " + data.message);
+            }
         }
     };
 
-    const handleSaveBrand = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSaveBrand = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (brandCode.trim() && brandName.trim()) {
-            setBrands([...brands, { code: brandCode.trim(), name: brandName.trim(), active: brandActive }]);
-            setBrandCode("");
-            setBrandName("");
-            setBrandActive(true);
-            alert("Brand saved successfully!");
+            const brand = {
+                brandCode: brandCode.trim(),
+                brandName: brandName.trim(),
+                active: brandActive
+            };
+            const response = await fetch("http://localhost:5005/api/brands",
+                {
+                    method: "post",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(brand)
+                })
+            const data = await response.json();
+            console.log("Brand Response:", data);
+
+            if (data.success) {
+                // Clear inputs after successful save
+                setBrandCode("");
+                setBrandName("");
+                setBrandActive(true);
+                alert("Brand saved successfully!");
+            } else {
+                alert("Error: " + data.message);
+            }
         }
     };
 
