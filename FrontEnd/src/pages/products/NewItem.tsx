@@ -139,13 +139,6 @@ export default function AddItem() {
         setBrand(b.brand_code);
         setShowBrandDropdown(false);
     };
-    const createItemCode = (b: any, t: any, g: any) => {
-        const BrandCode = b.brand_code;
-        const TypeCode = t.type_code;
-        const GroupCode = g.group_code;
-
-
-    }
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
