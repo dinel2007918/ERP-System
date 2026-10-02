@@ -4,7 +4,14 @@ import db from "../dataBase.js";
 const router = express.Router();
 
 router.get("/", (req, res) => {
-    console.log(req.body);
+    const sql = `SELECT * FROM group_codes`;
+    db.query(sql, (err, result) => {
+        if (err) {
+            console.log("Database error:", err.message);
+            return res.status(500).json({ success: false, message: "Failed to fetch group codes" });
+        }
+        res.json(result);
+    });
 });
 
 router.post("/", (req, res) => {

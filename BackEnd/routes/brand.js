@@ -46,5 +46,15 @@ router.post("/", (req, res) => {
     );
 
 });
+router.get("/", (req, res) => {
+    const sql = `SELECT * FROM brands`;
+    db.query(sql, (err, result) => {
+        if (err) {
+            console.log("Database error:", err.message);
+            return res.status(500).json({ success: false, message: "Failed to fetch brands" });
+        }
+        res.json(result);
+    });
+});
 
 export default router;

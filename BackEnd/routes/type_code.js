@@ -4,8 +4,13 @@ import db from "../dataBase.js";
 const router = express.Router();
 
 router.get("/", (req, res) => {
-    res.json({
-        message: "type_code route is working"
+    const sql = `SELECT * FROM type_codes`;
+    db.query(sql, (err, result) => {
+        if (err) {
+            console.log("Database error:", err.message);
+            return res.status(500).json({ success: false, message: "Failed to fetch type codes" });
+        }
+        res.json(result);
     });
 });
 
