@@ -20,10 +20,28 @@ export default function AddItem() {
     const [discount1, setDiscount1] = useState("");
     const [discount2, setDiscount2] = useState("");
     const [discount3, setDiscount3] = useState("");
-    //select types,brands,groups
-    const [brand, setbrand] = useState([]);
-    const [group_code, setGroup_code] = useState([]);
-    const [type_code, setType_code] = useState([]);
+    const [brand, setbrand] = useState<any[]>([]);
+    const [group_code, setGroup_code] = useState<any[]>([]);
+    const [type_code, setType_code] = useState<any[]>([]);
+
+    const [recalledItemCode, setRecalledItemCode] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+
+    const [hasCostAccess, setHasCostAccess] = useState(true);
+
+    useEffect(() => {
+        try {
+            const uStr = localStorage.getItem("erp_user");
+            if (uStr) {
+                const u = JSON.parse(uStr);
+                if (u.role !== "ADMINISTRATOR" && u.role !== "Admin") {
+                    setHasCostAccess(!!u.cost_price_access);
+                }
+            }
+        } catch (e) { }
+    }, []);
+
     //load the excisting brands from the database
     useEffect(() => {
         fetch("http://localhost:5005/api/brands")
@@ -47,6 +65,11 @@ export default function AddItem() {
 
     // Auto-generate Item Code when groupCode, typeCode, and Brand are selected
     useEffect(() => {
+        if (recalledItemCode) {
+            setItemcode(recalledItemCode);
+            return;
+        }
+
         if (groupCode && typeCode && Brand) {
             setIsGenerating(true);
             fetch("http://localhost:5005/api/newItem/next-item-code", {
@@ -139,6 +162,64 @@ export default function AddItem() {
         setBrand(b.brand_code);
         setShowBrandDropdown(false);
     };
+
+    const handleSearchInput = async (e: any) => {
+        const val = e.target.value.toUpperCase();
+        setProductId(val);
+
+        if (val.length > 0) {
+            setShowSearchDropdown(true);
+            try {
+                const res = await fetch(`http://localhost:5005/api/newItem/search?q=${val}`);
+                const data = await res.json();
+                setSearchResults(data.items || []);
+            } catch (e) { }
+        } else {
+            setShowSearchDropdown(false);
+        }
+    };
+
+    const handleRecall = async (targetId?: string) => {
+        const idToRecall = targetId || productId;
+        setShowSearchDropdown(false);
+
+        if (!idToRecall) {
+            alert("Please enter a Product ID to recall.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://localhost:5005/api/newItem/recall/${idToRecall}`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.message || "Item not found.");
+                return;
+            }
+
+            const item = data.item;
+            setGroupCode(item.Group_code || "");
+            setGroupSearchTerm(item.Group_code || "");
+            setTypeCode(item.Type_code || "");
+            setTypeSearchTerm(item.Type_code || "");
+            setBrand(item.brand || "");
+            setBrandSearchTerm(item.brand || "");
+            setRecalledItemCode(item.Item_Code || ""); // Lock code generator
+            setItemcode(item.Item_Code || "");
+            setProductId(item.Product_ID || "");
+            setDiscription(item.Description || "");
+            setCost(item.Cost || "");
+            setSalePrice(item.sale_price || "");
+            setDiscount1(item["1st_discount"] || "");
+            setDiscount2(item["2st_discount"] || "");
+            setDiscount3(item["3st_discount"] || "");
+
+            alert("Item recalled successfully!");
+        } catch (error) {
+            console.error("Error recalling item:", error);
+            alert("Failed to connect to the server for recall.");
+        }
+    };
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
@@ -212,6 +293,7 @@ export default function AddItem() {
         setBrandSearchTerm("");
         setItemcode("");
         setProductId("");
+        setRecalledItemCode("");
         setDiscription("");
         setCost("");
         setSalePrice("");
@@ -359,16 +441,43 @@ export default function AddItem() {
                     </div>
                 </div>
 
-                <div className="form-group">
-                    <label>Product ID</label>
-                    <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Enter the Product ID"
-                        value={productId}
-                        onChange={(e) => setProductId(e.target.value.toUpperCase())}
-                        required
-                    />
+                <div className="form-group" style={{ position: 'relative', zIndex: 5 }}>
+                    <label>Product ID (Search & Recall Item)</label>
+                    <div style={{ display: "flex", gap: "10px" }}>
+                        <div className="autocomplete-container" style={{ flex: 1, position: 'relative' }}>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Enter Product ID or Search Description..."
+                                value={productId}
+                                onChange={handleSearchInput}
+                                onFocus={() => { if (productId) setShowSearchDropdown(true); }}
+                                onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
+                                required
+                            />
+                            {showSearchDropdown && searchResults.length > 0 && (
+                                <div className="autocomplete-dropdown" style={{ top: '100%', position: 'absolute', width: '100%', zIndex: 20 }}>
+                                    {searchResults.map((item: any) => (
+                                        <div
+                                            key={item.Item_Code}
+                                            className="autocomplete-item"
+                                            onMouseDown={() => handleRecall(item.Product_ID)}
+                                        >
+                                            <strong>{item.Product_ID}</strong> - {item.Description} (Stock: {item.stock_quantity})
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => handleRecall()}
+                            style={{ padding: "0 15px", whiteSpace: "nowrap" }}
+                        >
+                            Recall
+                        </button>
+                    </div>
                 </div>
 
                 <div className="form-group">
@@ -384,17 +493,19 @@ export default function AddItem() {
                 </div>
 
                 <div className="form-grid">
-                    <div className="form-group">
-                        <label>Cost</label>
-                        <input
-                            type="number"
-                            className="form-input"
-                            placeholder="0.00"
-                            value={cost}
-                            onChange={(e) => setCost(e.target.value)}
-                            required
-                        />
-                    </div>
+                    {hasCostAccess && (
+                        <div className="form-group">
+                            <label>Cost</label>
+                            <input
+                                type="number"
+                                className="form-input"
+                                placeholder="0.00"
+                                value={cost}
+                                onChange={(e) => setCost(e.target.value)}
+                                required
+                            />
+                        </div>
+                    )}
 
                     <div className="form-group">
                         <label>Sale Price</label>

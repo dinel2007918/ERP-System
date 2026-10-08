@@ -1,0 +1,173 @@
+.user-management-container {
+    padding: 20px;
+    background: white;
+    min-height: calc(100vh - 60px);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.tab-navigation {
+    display: flex;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 15px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    margin-bottom: -2px;
+}
+
+.tab-btn.active {
+    color: #0284c7;
+    border-bottom-color: #0284c7;
+}
+
+.tab-section {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.section-title {
+    margin-top: 0;
+    color: #334155;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* User Grid */
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.user-table th {
+    background: #7dd3fc;
+    color: #0f172a;
+    text-align: left;
+    padding: 12px;
+    font-weight: 600;
+    border: 1px solid #cbd5e1;
+}
+
+.user-table td {
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+}
+
+.btn-edit,
+.btn-reset {
+    padding: 6px 12px;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-right: 5px;
+}
+
+.btn-edit {
+    background: #64748b;
+}
+
+.btn-reset {
+    background: #7dd3fc;
+    color: #0284c7;
+    font-weight: bold;
+}
+
+/* Forms */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #94a3b8;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+/* Checkboxes */
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.checkbox-grid label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #334155;
+    font-weight: 600;
+}
+
+/* Tree */
+.privilege-tree {
+    margin-left: 20px;
+}
+
+.tree-node {
+    padding: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #c2410c;
+    user-select: none;
+}
+
+.tree-icon {
+    display: inline-block;
+    width: 20px;
+    color: #ef4444;
+}
+
+/* Actions */
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+}
+
+.btn-save {
+    background: #22c55e;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-cancel {
+    background: #ef4444;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
