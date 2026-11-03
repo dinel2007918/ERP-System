@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function SalesOrder({ setPage }: any) {
     const [customerSearch, setCustomerSearch] = useState("");
@@ -15,7 +15,27 @@ export default function SalesOrder({ setPage }: any) {
 
     const [orderItems, setOrderItems] = useState<any[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+
     const [discountTier, setDiscountTier] = useState<"discount1" | "discount2" | "discount3">("discount1");
+
+    // Apply the correct discount tier if customer changes secretly
+    useEffect(() => {
+        if (orderItems.length > 0) {
+            const updated = orderItems.map(item => {
+                const discAmt = parseFloat(item[discountTier] || item.discount) || 0;
+                return {
+                    ...item,
+                    discount: discAmt,
+                    lineTotal: (parseFloat(item.unitPrice) - discAmt) * parseFloat(item.quantity)
+                };
+            });
+            // We use simple comparison to prevent infinite loops when arrays change
+            const diff = updated.some((u, i) => u.discount !== orderItems[i].discount || u.lineTotal !== orderItems[i].lineTotal);
+            if (diff) {
+                setOrderItems(updated);
+            }
+        }
+    }, [discountTier, orderItems]);
 
     // Calculate totals
     const subtotal = orderItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
@@ -80,12 +100,12 @@ export default function SalesOrder({ setPage }: any) {
             description: item.Description,
             unitPrice: parseFloat(item.sale_price) || 0,
             quantity: 1,
-            discount1: parseFloat(item.discount1) || 0,
-            discount2: parseFloat(item.discount2) || 0,
-            discount3: parseFloat(item.discount3) || 0,
-            get discount() { return this[discountTier] || 0; },
+            discount1: parseFloat(item["1st_discount"]) || 0,
+            discount2: parseFloat(item["2st_discount"]) || 0,
+            discount3: parseFloat(item["3st_discount"]) || 0,
+            discount: parseFloat(item[discountTier]) || 0,
             availableStock: item.availableStock,
-            lineTotal: (parseFloat(item.sale_price) || 0) * 1
+            lineTotal: (parseFloat(item.sale_price) - (parseFloat(item[discountTier]) || 0)) * 1
         }]);
         setItemSearch("");
         setShowItemDropdown(false);

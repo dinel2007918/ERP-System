@@ -21,6 +21,7 @@ import ReturnPrint from "./pages/sales/ReturnPrint";
 import CashRefund from "./pages/sales/CashRefund";
 import SalesReport from "./pages/sales/SalesReport";
 import InvoicePrint from "./pages/sales/InvoicePrint";
+import DraftInvoices from "./pages/sales/DraftInvoices";
 
 // customers
 import NewCustomer from "./pages/customers/NewCustomer";
@@ -55,6 +56,7 @@ const pageTitles: Record<string, string> = {
     "sales-order": "Sales Order",
     "pending-orders": "Pending Orders",
     "invoice": "Sales Invoice",
+    "draft-invoices": "Draft Invoices Config",
     "sales-management": "Sales Management",
     "cashbill": "Sales Cancel",
     "customerbill": "Sales Return",
@@ -118,6 +120,7 @@ function App() {
                     {page === "sales-order" && <SalesOrder setPage={setPage} />}
                     {page === "pending-orders" && <PendingOrders setPage={setPage} setPassData={setPassData} />}
                     {page === "invoice" && <SalesInvoice setPage={setPage} passData={passData} setPassData={setPassData} />}
+                    {page === "draft-invoices" && <DraftInvoices setPage={setPage} setPassData={setPassData} />}
                     {page === "sales-management" && <SalesManagement setPage={setPage} setPassData={setPassData} />}
                     {page === "cashbill" && <SalesCancel passData={passData} setPage={setPage} />}
                     {page === "customerbill" && <SalesReturn setPage={setPage} setPassData={setPassData} passData={passData} />}

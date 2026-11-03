@@ -12,6 +12,7 @@ export default function NewCustomer() {
     const [isActive, setIsActive] = useState(true);
     const [creditLimit, setCreditLimit] = useState("");
     const [creditPeriod, setCreditPeriod] = useState("");
+    const [isEditing, setIsEditing] = useState(false);
 
     // Autocomplete dropdown state
     const [customerSearch, setCustomerSearch] = useState("");
@@ -45,12 +46,13 @@ export default function NewCustomer() {
         setIsActive(c.is_active === 1 || c.is_active === true);
         setCreditLimit(c.credit_limit || "");
         setCreditPeriod(c.credit_period || "");
+        setIsEditing(true);
     };
 
     // Auto-generate customer code based on customerName 
     useEffect(() => {
-        if (!customerName || customerName.trim() === '') {
-            setCustomerCode("");
+        if (!customerName || customerName.trim() === '' || isEditing) {
+            if (!isEditing) setCustomerCode("");
             return;
         }
 
@@ -100,6 +102,7 @@ export default function NewCustomer() {
             setIsActive(customer.is_active === 1 || customer.is_active === true);
             setCreditLimit(customer.credit_limit || "");
             setCreditPeriod(customer.credit_period || "");
+            setIsEditing(true);
             alert("Customer recalled successfully!");
         } catch (error) {
             console.error("Error recalling customer:", error);
@@ -153,6 +156,7 @@ export default function NewCustomer() {
     };
 
     const handleCancel = () => {
+        setIsEditing(false);
         setCustomerCode("");
         setCustomerName("");
         setContactNumber("");

@@ -15,6 +15,7 @@ import purchaseInvoiceRouter from "./routes/purchaseInvoice.js";
 import supplierRouter from "./routes/supplier.js";
 import purchaseReturnRouter from "./routes/purchaseReturn.js";
 import usersRouter from "./routes/users.js";
+import dashboardRouter from "./routes/dashboard.js";
 
 import { authenticateToken } from "./authMiddleware.js";
 
@@ -42,6 +43,7 @@ app.use("/api/payments", paymentsRouter);
 app.use("/api/purchase-invoices", purchaseInvoiceRouter);
 app.use("/api/suppliers", supplierRouter);
 app.use("/api/purchase-returns", purchaseReturnRouter);
+app.use("/api/dashboard", dashboardRouter);
 // ...one app.use per route file
 
 app.listen(5005, () => console.log("Server running on http://localhost:5005"));

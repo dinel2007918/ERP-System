@@ -31,7 +31,8 @@ export default function OpenStock() {
     const handleSelectItem = (item: any) => {
         setItemCode(item.Item_Code);
         setDescription(item.Description);
-        setSearchTerm(`${item.Item_Code} - ${item.Description} (Current: ${item.stock_quantity})`);
+        const availableStr = (Number(item.stock_quantity) || 0) - (Number(item.reserved_stock) || 0) - (Number(item.draft_stock) || 0);
+        setSearchTerm(`${item.Item_Code} - ${item.Description} (Avail: ${availableStr})`);
         setShowSearchDropdown(false);
     };
 
@@ -94,15 +95,18 @@ export default function OpenStock() {
                             />
                             {showSearchDropdown && searchResults.length > 0 && (
                                 <div className="autocomplete-dropdown" style={{ top: '100%', position: 'absolute', width: '100%', zIndex: 20 }}>
-                                    {searchResults.map((item: any) => (
-                                        <div
-                                            key={item.Item_Code}
-                                            className="autocomplete-item"
-                                            onMouseDown={() => handleSelectItem(item)}
-                                        >
-                                            <strong>{item.Product_ID}</strong> - {item.Description} (Stock: {item.stock_quantity})
-                                        </div>
-                                    ))}
+                                    {searchResults.map((item: any) => {
+                                        const availableStr = (Number(item.stock_quantity) || 0) - (Number(item.reserved_stock) || 0) - (Number(item.draft_stock) || 0);
+                                        return (
+                                            <div
+                                                key={item.Item_Code}
+                                                className="autocomplete-item"
+                                                onMouseDown={() => handleSelectItem(item)}
+                                            >
+                                                <strong>{item.Product_ID}</strong> - {item.Description} (Available: {availableStr} | Physical: {item.stock_quantity})
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>

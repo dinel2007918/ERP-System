@@ -112,6 +112,7 @@ const PRIVILEGE_CATEGORIES = {
     ],
     "Sales": [
         { id: "invoice", name: "Sales Invoice" },
+        { id: "draft-invoices", name: "Draft Invoices" },
         { id: "sales-management", name: "Sales Management" },
         { id: "cashbill", name: "Sales Cancel" },
         { id: "customerbill", name: "Sales Return" },
@@ -161,6 +162,8 @@ function UserPrivileges({ selectedUser, onSave, onCancel }: { selectedUser: any,
                 cost_price_access: selectedUser.cost_price_access,
                 profit_margin_access: selectedUser.profit_margin_access,
                 price_modify: selectedUser.price_modify,
+                dashboard_access: selectedUser.dashboard_access,
+                invoice_post_access: selectedUser.invoice_post_access,
                 privileges: selectedUser.privileges || []
             });
         }
@@ -194,6 +197,8 @@ function UserPrivileges({ selectedUser, onSave, onCancel }: { selectedUser: any,
                 <label><input type="checkbox" checked={access.cost_price_access} onChange={e => setAccess({ ...access, cost_price_access: e.target.checked })} /> Cost Price Access</label>
                 <label><input type="checkbox" checked={access.profit_margin_access} onChange={e => setAccess({ ...access, profit_margin_access: e.target.checked })} /> Profit Margin Access</label>
                 <label><input type="checkbox" checked={access.price_modify} onChange={e => setAccess({ ...access, price_modify: e.target.checked })} /> Price Modify</label>
+                <label><input type="checkbox" checked={access.dashboard_access} onChange={e => setAccess({ ...access, dashboard_access: e.target.checked })} /> Dashboard Access (Phase 7)</label>
+                <label><input type="checkbox" checked={access.invoice_post_access} onChange={e => setAccess({ ...access, invoice_post_access: e.target.checked })} /> Post Sales Invoices (Draft Approval)</label>
             </div>
 
             <h4 style={{ marginTop: '30px', color: '#1e293b' }}>Granular Page-Level Privileges Tree</h4>

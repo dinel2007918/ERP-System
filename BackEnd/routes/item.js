@@ -11,10 +11,12 @@ router.get("/search", async (req, res) => {
         const q = req.query.q || '';
         const searchParam = `%${q}%`;
         const query = `
-            SELECT Item_Code, Product_ID, Description, Cost, sale_price, stock_quantity, 
-            1st_discount, 2st_discount, 3st_discount 
-            FROM items 
-            WHERE Item_Code LIKE ? OR Product_ID LIKE ? OR Description LIKE ?
+            SELECT i.Item_Code, i.Product_ID, i.Description, i.Cost, i.sale_price, i.stock_quantity, 
+            i.1st_discount, i.2st_discount, i.3st_discount,
+            (SELECT COALESCE(SUM(reserved_quantity - released_quantity), 0) FROM stock_reservations WHERE item_code = i.Item_Code AND status IN ('RESERVED', 'PARTIALLY_RELEASED')) as reserved_stock,
+            (SELECT COALESCE(SUM(sii.quantity), 0) FROM sales_invoice_items sii JOIN sales_invoices si ON sii.invoice_id = si.id WHERE sii.item_code = i.Item_Code AND si.status = 'DRAFT') as draft_stock
+            FROM items i
+            WHERE i.Item_Code LIKE ? OR i.Product_ID LIKE ? OR i.Description LIKE ?
             LIMIT 30
         `;
         const results = await queryAsync(query, [searchParam, searchParam, searchParam]);
@@ -45,6 +47,10 @@ router.get("/report/:itemCode", async (req, res) => {
         const lastStock = await queryAsync("SELECT movement_date FROM stock_movements WHERE item_code = ? ORDER BY movement_date DESC LIMIT 1", [itemCode]);
         const last_update = lastStock.length > 0 ? lastStock[0].movement_date : null;
 
+        // Virtual Draft and Reserved
+        const draftAgg = await queryAsync("SELECT COALESCE(SUM(sii.quantity), 0) as draft_qty FROM sales_invoice_items sii JOIN sales_invoices si ON sii.invoice_id = si.id WHERE sii.item_code = ? AND si.status = 'DRAFT'", [itemCode]);
+        const resAgg = await queryAsync("SELECT COALESCE(SUM(reserved_quantity - released_quantity), 0) as res_qty FROM stock_reservations WHERE item_code = ? AND status IN ('RESERVED', 'PARTIALLY_RELEASED')", [itemCode]);
+
         // 4. Detailed History (Invoices only as requested: Purchases on top, then Sales, sorted by date)
         const history = await queryAsync(`
             SELECT 'purchase' as movement_type, pii.quantity as quantity_change, pi.invoice_number as reference_id, s.supplier_name as entity_name, pii.unit_cost as price, pi.invoice_date as movement_date 
@@ -73,6 +79,8 @@ router.get("/report/:itemCode", async (req, res) => {
                 total_sales_return_val: sRetAgg.total_val || 0,
                 total_purchase_return_qty: 0,
                 total_purchase_return_val: 0,
+                total_draft_qty: draftAgg[0].draft_qty || 0,
+                total_reserved_qty: resAgg[0].res_qty || 0,
                 last_stock_update: last_update
             },
             history

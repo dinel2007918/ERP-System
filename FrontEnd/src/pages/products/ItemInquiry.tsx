@@ -72,15 +72,18 @@ export default function ItemInquiry() {
                 />
                 {showDropdown && searchResults.length > 0 && (
                     <div className="autocomplete-dropdown" style={{ top: '100%' }}>
-                        {searchResults.map((item: any) => (
-                            <div
-                                key={item.Item_Code}
-                                className="autocomplete-item"
-                                onMouseDown={() => loadReport(item.Item_Code)}
-                            >
-                                <strong>{item.Product_ID}</strong> - {item.Description} (Stock: {item.stock_quantity})
-                            </div>
-                        ))}
+                        {searchResults.map((item: any) => {
+                            const availableStr = (Number(item.stock_quantity) || 0) - (Number(item.reserved_stock) || 0) - (Number(item.draft_stock) || 0);
+                            return (
+                                <div
+                                    key={item.Item_Code}
+                                    className="autocomplete-item"
+                                    onMouseDown={() => loadReport(item.Item_Code)}
+                                >
+                                    <strong>{item.Product_ID}</strong> - {item.Description} (Available: {availableStr} | Physical: {item.stock_quantity})
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -106,6 +109,16 @@ export default function ItemInquiry() {
                         <div className="stat-card" style={{ padding: '15px', backgroundColor: '#f8fafc', borderRadius: '8px', borderLeft: '4px solid #ef4444' }}>
                             <h4 style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>Total Sales Returns</h4>
                             <h2 style={{ margin: '5px 0 0', color: '#1e293b' }}>{report.summary.total_sales_return_qty}</h2>
+                        </div>
+                        <div className="stat-card" style={{ padding: '15px', backgroundColor: '#fdf2f8', borderRadius: '8px', borderLeft: '4px solid #db2777' }}>
+                            <h4 style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>Pending Draft Invoices</h4>
+                            <h2 style={{ margin: '5px 0 0', color: '#1e293b' }}>{report.summary.total_draft_qty}</h2>
+                        </div>
+                        <div className="stat-card" style={{ padding: '15px', backgroundColor: '#f0fdf4', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
+                            <h4 style={{ margin: 0, color: '#10b981', fontSize: '13px', fontWeight: 'bold' }}>Available to Sell</h4>
+                            <h2 style={{ margin: '5px 0 0', color: '#047857' }}>
+                                {(Number(report.item.stock_quantity) || 0) - (Number(report.summary.total_reserved_qty) || 0) - (Number(report.summary.total_draft_qty) || 0)}
+                            </h2>
                         </div>
                     </div>
 

@@ -161,7 +161,15 @@ export default function CustomerInquiry() {
                                             <td style={{ textAlign: 'right', fontWeight: 'bold', color: (inv.grand_total - inv.amount_paid) > 0 ? '#b91c1c' : '#15803d' }}>
                                                 {parseFloat(inv.balance).toFixed(2)}
                                             </td>
-                                            <td>{inv.status}</td>
+                                            <td>
+                                                <span style={{
+                                                    padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold',
+                                                    backgroundColor: inv.status === 'DRAFT' ? '#fef3c7' : '#dcfce7',
+                                                    color: inv.status === 'DRAFT' ? '#d97706' : '#166534'
+                                                }}>
+                                                    {inv.status}
+                                                </span>
+                                            </td>
                                         </tr>
                                     ))}
                                     {ledger.invoices.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', color: '#64748b' }}>No Invoices found</td></tr>}

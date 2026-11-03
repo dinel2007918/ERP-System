@@ -27,7 +27,7 @@ router.post("/login", async (req, res) => {
         // 1. Verify credentials
         const [users] = await connection.query(`
             SELECT u.id, u.username, u.status, r.role_name, 
-                   u.cost_price_access, u.profit_margin_access, u.price_modify, u.privileges
+                   u.cost_price_access, u.profit_margin_access, u.price_modify, u.invoice_post_access, u.privileges
             FROM users u
             LEFT JOIN roles r ON u.role_id = r.id
             WHERE u.username = ? AND u.password_hash = ?
@@ -66,6 +66,8 @@ router.post("/login", async (req, res) => {
                 cost_price_access: !!user.cost_price_access,
                 profit_margin_access: !!user.profit_margin_access,
                 price_modify: !!user.price_modify,
+                dashboard_access: !!user.dashboard_access,
+                invoice_post_access: !!user.invoice_post_access,
                 privileges: user.privileges ? (typeof user.privileges === 'string' ? JSON.parse(user.privileges) : user.privileges) : []
             }
         });
@@ -89,6 +91,43 @@ router.post("/logout", async (req, res) => {
     try {
         await connection.query("DELETE FROM user_sessions WHERE session_token = ?", [token]);
         res.json({ success: true, message: "Logged out successfully." });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    } finally {
+        if (connection.release) connection.release();
+    }
+});
+
+// GET /api/users/me — returns fresh permissions for the currently logged-in user
+router.get("/me", async (req, res) => {
+    const connection = promiseDb.promise ? await promiseDb.promise().getConnection() : promiseDb;
+    try {
+        const [rows] = await connection.query(`
+            SELECT u.id, u.username, r.role_name,
+                   u.cost_price_access, u.profit_margin_access, u.price_modify,
+                   u.dashboard_access, u.invoice_post_access, u.privileges
+            FROM users u
+            LEFT JOIN roles r ON u.role_id = r.id
+            WHERE u.id = ?
+        `, [req.user.id]);
+
+        if (rows.length === 0) return res.status(404).json({ success: false, message: "User not found." });
+
+        const u = rows[0];
+        res.json({
+            success: true,
+            user: {
+                id: u.id,
+                username: u.username,
+                role: u.role_name,
+                cost_price_access: !!u.cost_price_access,
+                profit_margin_access: !!u.profit_margin_access,
+                price_modify: !!u.price_modify,
+                dashboard_access: !!u.dashboard_access,
+                invoice_post_access: !!u.invoice_post_access,
+                privileges: u.privileges ? (typeof u.privileges === 'string' ? JSON.parse(u.privileges) : u.privileges) : []
+            }
+        });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
     } finally {
@@ -130,6 +169,8 @@ router.get("/", async (req, res) => {
             cost_price_access: !!user.cost_price_access,
             profit_margin_access: !!user.profit_margin_access,
             price_modify: !!user.price_modify,
+            dashboard_access: !!user.dashboard_access,
+            invoice_post_access: !!user.invoice_post_access,
             privileges: user.privileges ? (typeof user.privileges === 'string' ? JSON.parse(user.privileges) : user.privileges) : []
         }));
         res.json(parsedUsers);
@@ -152,8 +193,8 @@ router.post("/", async (req, res) => {
                 login_time, logout_time, company_name, 
                 credit_limit_auth, credit_limit_modify, max_disc_modify,
                 all_location_access, authority, cost_price_access,
-                profit_margin_access, price_modify, privileges
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                profit_margin_access, price_modify, dashboard_access, invoice_post_access, privileges
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             payload.full_name, payload.mobile || null, payload.email || null, payload.role_id,
             payload.username, hashedPassword,
@@ -161,6 +202,7 @@ router.post("/", async (req, res) => {
             payload.credit_limit_auth ? 1 : 0, payload.credit_limit_modify ? 1 : 0, payload.max_disc_modify ? 1 : 0,
             payload.all_location_access ? 1 : 0, payload.authority ? 1 : 0, payload.cost_price_access ? 1 : 0,
             payload.profit_margin_access ? 1 : 0, payload.price_modify ? 1 : 0,
+            payload.dashboard_access ? 1 : 0, payload.invoice_post_access ? 1 : 0,
             payload.privileges ? JSON.stringify(payload.privileges) : JSON.stringify([])
         ]);
         res.json({ success: true, message: "User successfully created natively." });
@@ -185,7 +227,7 @@ router.put("/:id", async (req, res) => {
                 login_time = ?, logout_time = ?, company_name = ?,
                 credit_limit_auth = ?, credit_limit_modify = ?, max_disc_modify = ?,
                 all_location_access = ?, authority = ?, cost_price_access = ?,
-                profit_margin_access = ?, price_modify = ?, privileges = ?
+                profit_margin_access = ?, price_modify = ?, dashboard_access = ?, invoice_post_access = ?, privileges = ?
             WHERE id = ?
         `, [
             payload.full_name, payload.mobile || null, payload.email || null, payload.role_id, payload.username,
@@ -193,6 +235,7 @@ router.put("/:id", async (req, res) => {
             payload.credit_limit_auth ? 1 : 0, payload.credit_limit_modify ? 1 : 0, payload.max_disc_modify ? 1 : 0,
             payload.all_location_access ? 1 : 0, payload.authority ? 1 : 0, payload.cost_price_access ? 1 : 0,
             payload.profit_margin_access ? 1 : 0, payload.price_modify ? 1 : 0,
+            payload.dashboard_access ? 1 : 0, payload.invoice_post_access ? 1 : 0,
             payload.privileges ? JSON.stringify(payload.privileges) : JSON.stringify([]),
             req.params.id
         ]);

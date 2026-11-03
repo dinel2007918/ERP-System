@@ -13,11 +13,15 @@ function Sidebar({ setPage, handleLogout }: SidebarProps) {
     };
 
     let userPrivileges: string[] = [];
+    let hasDashboardAccess = false;
+    let hasInvoicePostAccess = false;
     try {
         const userStr = localStorage.getItem("erp_user");
         if (userStr) {
             const userObj = JSON.parse(userStr);
             userPrivileges = userObj.privileges || [];
+            hasDashboardAccess = !!userObj.dashboard_access;
+            hasInvoicePostAccess = !!userObj.invoice_post_access;
         }
     } catch (e) { }
 
@@ -31,7 +35,9 @@ function Sidebar({ setPage, handleLogout }: SidebarProps) {
     return (
         <div className="sidebar">
             <h2>Menu</h2>
-            <button onClick={() => setPage("dashboard")}>dashboard</button>
+            {hasDashboardAccess && (
+                <button onClick={() => setPage("dashboard")}>dashboard</button>
+            )}
 
             {checkBlock(["new-item", "item-inquiry", "open-stock", "OEM"]) && (
                 <>
@@ -47,12 +53,13 @@ function Sidebar({ setPage, handleLogout }: SidebarProps) {
                 </>
             )}
 
-            {checkBlock(["invoice", "sales-management", "cashbill", "customerbill", "payment", "cash-refund", "payment-report"]) && (
+            {checkBlock(["invoice", "draft-invoices", "sales-management", "cashbill", "customerbill", "payment", "cash-refund", "payment-report"]) && (
                 <>
                     <button onClick={() => toggleMenu("sales")}>sales{openMenu === "sales" ? "▲" : "▼"}</button>
                     {openMenu === "sales" && (
                         <div className="submenu">
                             {canAccess("invoice") && <button onClick={() => setPage("invoice")}>Sales invoice</button>}
+                            {(canAccess("draft-invoices") || hasInvoicePostAccess) && <button onClick={() => setPage("draft-invoices")}>Draft Invoices</button>}
                             {canAccess("sales-management") && <button onClick={() => setPage("sales-management")}>Sales Management</button>}
                             {canAccess("cashbill") && <button onClick={() => setPage("cashbill")}>Sales cancel</button>}
                             {canAccess("customerbill") && <button onClick={() => setPage("customerbill")}>Sales return</button>}

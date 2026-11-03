@@ -22,6 +22,58 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
     const [amountPaid, setAmountPaid] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("Cash");
     const [isSaving, setIsSaving] = useState(false);
+    const [hasPostAccess, setHasPostAccess] = useState(false);
+
+    // Fetch live permissions from server on mount — avoids stale localStorage issue
+    useEffect(() => {
+        const token = localStorage.getItem("erp_session");
+        if (!token) return;
+        fetch("http://localhost:5005/api/users/me", {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const u = data.user;
+                    setHasPostAccess(
+                        !!u.invoice_post_access ||
+                        (u.privileges || []).includes("draft-invoices")
+                    );
+                }
+            })
+            .catch(() => {
+                // Fallback to localStorage if network fails
+                try {
+                    const userStr = localStorage.getItem("erp_user");
+                    if (userStr) {
+                        const userObj = JSON.parse(userStr);
+                        setHasPostAccess(
+                            !!userObj.invoice_post_access ||
+                            (userObj.privileges || []).includes("draft-invoices")
+                        );
+                    }
+                } catch (e) { }
+            });
+    }, []);
+
+    // Apply the correct discount tier if customer changes secretly
+    useEffect(() => {
+        if (!sourceOrder && orderItems.length > 0) {
+            const updated = orderItems.map(item => {
+                const discAmt = parseFloat(item[discountTier] || item.discount) || 0;
+                return {
+                    ...item,
+                    discount: discAmt,
+                    lineTotal: (parseFloat(item.unitPrice) - discAmt) * parseFloat(item.quantity)
+                };
+            });
+            // We use simple comparison to prevent infinite loops when arrays change
+            const diff = updated.some((u, i) => u.discount !== orderItems[i].discount || u.lineTotal !== orderItems[i].lineTotal);
+            if (diff) {
+                setOrderItems(updated);
+            }
+        }
+    }, [discountTier, orderItems, sourceOrder]);
 
     // Load from Order if redirected via Pending Orders
     useEffect(() => {
@@ -141,12 +193,12 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
             description: item.Description,
             unitPrice: parseFloat(item.sale_price) || 0,
             quantity: 1,
-            discount1: parseFloat(item.discount1) || 0,
-            discount2: parseFloat(item.discount2) || 0,
-            discount3: parseFloat(item.discount3) || 0,
-            get discount() { return this[discountTier] || 0; },
+            discount1: parseFloat(item["1st_discount"]) || 0,
+            discount2: parseFloat(item["2st_discount"]) || 0,
+            discount3: parseFloat(item["3st_discount"]) || 0,
+            discount: parseFloat(item[discountTier]) || 0,
             availableStock: item.availableStock,
-            lineTotal: (parseFloat(item.sale_price) || 0) * 1
+            lineTotal: (parseFloat(item.sale_price) - (parseFloat(item[discountTier]) || 0)) * 1
         }]);
         setItemSearch("");
         setShowItemDropdown(false);
@@ -173,9 +225,11 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
         setOrderItems(updated);
     };
 
-    const saveInvoice = async () => {
+    const saveInvoice = async (mode: 'order' | 'save') => {
         if (!selectedCustomer) return alert("Select a customer first");
         if (orderItems.length === 0) return alert("Add at least one item to invoice");
+
+        const isDraft = mode === 'order';
 
         setIsSaving(true);
         const payload = {
@@ -188,6 +242,7 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
             grandTotal,
             amountPaid: parseFloat(amountPaid) || 0,
             paymentMethod,
+            status: isDraft ? 'DRAFT' : 'POSTED',
             items: orderItems
         };
 
@@ -199,26 +254,26 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
             });
             const data = await res.json();
             if (data.success) {
-                if (setPage) {
-                    if (setPassData) setPassData({ invoiceId: data.invoiceId });
-                    setPage("invoice-print");
+                if (isDraft) {
+                    // ORDER: go to draft invoices page
+                    if (setPage) setPage("draft-invoices");
                 } else {
-                    alert(`Invoice posted successfully! Number: ${data.invoiceNumber}`);
-                    window.location.reload();
+                    // SAVE: go to print page
+                    if (setPage) {
+                        if (setPassData) setPassData({ invoiceId: data.invoiceId });
+                        setPage("invoice-print");
+                    } else {
+                        alert(`Invoice posted successfully! Number: ${data.invoiceNumber}`);
+                        window.location.reload();
+                    }
                 }
             } else {
-                alert(data.message || "Failed to post invoice");
+                alert(data.message || "Failed to save invoice");
             }
         } catch (e: any) {
             alert("Network error saving invoice!");
         } finally {
             setIsSaving(false);
-            if ((window as any)._navigate) {
-                // This is a bit of a hack since setPage isn't passed down to SalesInvoice natively but passData exists. 
-                // Wait, App.tsx doesn't pass 'setPage' to Invoice today? Let me just use the standard global state or alert.
-                // It's safer to just reload or if we had setPage we could use it. 
-                delete (window as any)._navigate;
-            }
         }
     };
 
@@ -276,14 +331,6 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
                                             value={discountTier}
                                             onChange={(e: any) => {
                                                 setDiscountTier(e.target.value);
-                                                const tier = e.target.value;
-                                                const updated = orderItems.map(item => {
-                                                    item.get = function () { return item[tier] || 0; };
-                                                    item.discount = item[tier] || 0;
-                                                    item.lineTotal = (item.unitPrice - item.discount) * item.quantity;
-                                                    return item;
-                                                });
-                                                setOrderItems(updated);
                                             }}
                                         >
                                             <option value="discount1">Type 1</option>
@@ -408,13 +455,33 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
                                     <strong>{balance > 0 ? balance.toFixed(2) : "0.00"}</strong>
                                 </div>
                             </div>
-
-                            <button type="button" className="btn-primary" style={{ width: '100%', marginTop: '20px', padding: '15px', fontSize: '16px' }} onClick={saveInvoice} disabled={isSaving}>
-                                {isSaving ? "Posting..." : "POST INVOICE"}
-                            </button>
                         </div>
                     </div>
                 )}
+
+                {/* ORDER and SAVE buttons — always visible */}
+                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                    <button
+                        type="button"
+                        className="btn-secondary"
+                        style={{ padding: '15px 40px', fontSize: '16px', backgroundColor: '#64748b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        onClick={() => saveInvoice('order')}
+                        disabled={isSaving}
+                    >
+                        {isSaving ? "Saving..." : "ORDER"}
+                    </button>
+                    {hasPostAccess && (
+                        <button
+                            type="button"
+                            className="btn-primary"
+                            style={{ padding: '15px 40px', fontSize: '16px', cursor: 'pointer' }}
+                            onClick={() => saveInvoice('save')}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? "Saving..." : "SAVE"}
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

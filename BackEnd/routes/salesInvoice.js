@@ -17,6 +17,7 @@ router.post("/", async (req, res) => {
         grandTotal,
         amountPaid,
         paymentMethod,
+        status,          // 'DRAFT' or 'POSTED'
         createdBy
     } = req.body;
 
@@ -43,8 +44,8 @@ router.post("/", async (req, res) => {
         // Create Invoice Header
         const [invResult] = await connection.query(`
             INSERT INTO sales_invoices (invoice_number, customer_id, sales_order_id, invoice_date, subtotal, discount, grand_total, amount_paid, payment_method, status)
-            VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, 'POSTED')
-        `, [invoiceNumber, customerId, orderId || null, subtotal, discountTotal, grandTotal, amountPaid || 0, paymentMethod || 'Cash']);
+            VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)
+        `, [invoiceNumber, customerId, orderId || null, subtotal, discountTotal, grandTotal, amountPaid || 0, paymentMethod || 'Cash', status || 'POSTED']);
 
         const invoiceId = invResult.insertId;
 
@@ -58,29 +59,30 @@ router.post("/", async (req, res) => {
                 VALUES (?, ?, ?, ?, ?, ?)
             `, [invoiceId, itm.itemCode, qty, itm.unitPrice, itm.discount, itm.lineTotal]);
 
-            // Deduct from Physical Stock (Items table)
-            const [itemRows] = await connection.query("SELECT stock_quantity FROM items WHERE Item_Code = ? FOR UPDATE", [itm.itemCode]);
-            if (itemRows.length === 0) throw new Error(`Item ${itm.itemCode} not found in inventory.`);
+            // Deduct from Physical Stock (Items table) ONLY IF POSTED
+            if (status !== 'DRAFT') {
+                const [itemRows] = await connection.query("SELECT stock_quantity FROM items WHERE Item_Code = ? FOR UPDATE", [itm.itemCode]);
+                if (itemRows.length === 0) throw new Error(`Item ${itm.itemCode} not found in inventory.`);
 
-            const currentQty = parseFloat(itemRows[0].stock_quantity);
+                const currentQty = parseFloat(itemRows[0].stock_quantity);
 
-            // If this is a direct invoice (no order), ensure physical stock >= quantity
-            if (!orderId && currentQty < qty) {
-                // Actually, wait, even if orderId is missing, if they haven't reserved it, we must ensure it doesn't drop below 0 if business logic demands. I will let physical stock drop for now or enforce it:
-                if (currentQty < qty) throw new Error(`Insufficient physical stock for ${itm.itemCode}.`);
+                // If this is a direct invoice (no order), ensure physical stock >= quantity
+                if (!orderId && currentQty < qty) {
+                    if (currentQty < qty) throw new Error(`Insufficient physical stock for ${itm.itemCode}.`);
+                }
+
+                const newQty = currentQty - qty;
+                await connection.query("UPDATE items SET stock_quantity = ? WHERE Item_Code = ?", [newQty, itm.itemCode]);
+
+                // Record into Stock Movements
+                await connection.query(`
+                    INSERT INTO stock_movements (item_code, movement_type, quantity_change, quantity_after, reference_id, reason, movement_date)
+                    VALUES (?, 'sales', ?, ?, ?, ?, NOW())
+                `, [itm.itemCode, -qty, newQty, invoiceNumber, `Sales Invoice ${orderId ? `(from SO ${orderId})` : ''}`]);
             }
 
-            const newQty = currentQty - qty;
-            await connection.query("UPDATE items SET stock_quantity = ? WHERE Item_Code = ?", [newQty, itm.itemCode]);
-
-            // Record into Stock Movements
-            await connection.query(`
-                INSERT INTO stock_movements (item_code, movement_type, quantity_change, quantity_after, reference_id, reason, movement_date)
-                VALUES (?, 'sales', ?, ?, ?, ?, NOW())
-            `, [itm.itemCode, -qty, newQty, invoiceNumber, `Sales Invoice ${orderId ? `(from SO ${orderId})` : ''}`]);
-
-            // Release Reservations if this comes from a Sales Order
-            if (orderId && itm.orderItemId) {
+            // Release Reservations if this comes from a Sales Order ONLY IF POSTED
+            if (status !== 'DRAFT' && orderId && itm.orderItemId) {
                 // Fetch existing reservation
                 const [resRows] = await connection.query(`
                     SELECT * FROM stock_reservations 
@@ -109,16 +111,16 @@ router.post("/", async (req, res) => {
             }
         }
 
-        // Process Payment Log if payment made
-        if (parseFloat(amountPaid) > 0) {
+        // Process Payment Log if payment made AND POSTED
+        if (status !== 'DRAFT' && parseFloat(amountPaid) > 0) {
             await connection.query(`
                 INSERT INTO payments (reference_id, type, entity_id, amount, method, payment_date)
                 VALUES (?, 'CUSTOMER', ?, ?, ?, NOW())
             `, [invoiceNumber, customerId, amountPaid, paymentMethod || 'Cash']);
         }
 
-        // If converted from order, update the Order Status
-        if (orderId) {
+        // If converted from order, update the Order Status (ONLY IF POSTED)
+        if (status !== 'DRAFT' && orderId) {
             // Check if all lines are fully invoiced
             const [orderItems] = await connection.query("SELECT ordered_quantity, invoiced_quantity FROM sales_order_items WHERE sales_order_id = ?", [orderId]);
             const allCompleted = orderItems.every(i => parseFloat(i.invoiced_quantity) >= parseFloat(i.ordered_quantity));
@@ -208,10 +210,17 @@ router.put("/:id/cancel", async (req, res) => {
             throw new Error("Invoice is already canceled.");
         }
 
-        // 2. Fetch items for this invoice to reverse stock
+        // 2. If DRAFT — it never touched stock, simply delete it cleanly
+        if (invoice.status === 'DRAFT') {
+            await connection.query("DELETE FROM sales_invoice_items WHERE invoice_id = ?", [invoiceId]);
+            await connection.query("DELETE FROM sales_invoices WHERE id = ?", [invoiceId]);
+            await connection.commit();
+            return res.json({ success: true, message: "Draft order rejected and removed." });
+        }
+
+        // 3. POSTED invoice — reverse physical stock
         const [itemRows] = await connection.query("SELECT item_code, quantity FROM sales_invoice_items WHERE invoice_id = ?", [invoiceId]);
 
-        // 3. Reverse physical stock
         for (const item of itemRows) {
             const qty = parseFloat(item.quantity);
             const [stockRows] = await connection.query("SELECT stock_quantity FROM items WHERE Item_Code = ? FOR UPDATE", [item.item_code]);
@@ -228,21 +237,79 @@ router.put("/:id/cancel", async (req, res) => {
             }
         }
 
-        // 4. If this invoice came from an order, we might need to reverse the order's invoiced_quantity and released_quantity
-        // (For simplicity in this scope, let's just mark the invoice itself as CANCELED. Fully reversing the entire ERP tree can be done later if needed).
-
-        // 5. Cancel the invoice status
+        // 4. Cancel the invoice status
         await connection.query("UPDATE sales_invoices SET status = 'CANCELED' WHERE id = ?", [invoiceId]);
 
-        // 6. Delete or mark payments mathematically closed? Easiest is just letting the invoice be CANCELED.
-
         await connection.commit();
-        res.json({ success: true, message: "Canceled successfully" });
+        res.json({ success: true, message: "Invoice canceled successfully." });
 
     } catch (err) {
         await connection.rollback();
         console.error("Cancel failed:", err);
         res.status(400).json({ success: false, message: err.message });
+    } finally {
+        connection.release();
+    }
+});
+
+
+// POST /api/sales-invoices/:id/approve
+router.post("/:id/approve", async (req, res) => {
+    const invoiceId = req.params.id;
+    const connection = await promiseDb.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const [invRows] = await connection.query("SELECT * FROM sales_invoices WHERE id = ? FOR UPDATE", [invoiceId]);
+        if (invRows.length === 0) throw new Error("Invoice not found.");
+        const invoice = invRows[0];
+
+        if (invoice.status !== 'DRAFT') throw new Error("Only DRAFT invoices can be formally approved.");
+
+        const [items] = await connection.query("SELECT * FROM sales_invoice_items WHERE invoice_id = ?", [invoiceId]);
+
+        // Process Items
+        for (const itm of items) {
+            const qty = parseFloat(itm.quantity);
+            const itemCode = itm.item_code; // Note: column is item_code not itemCode here
+
+            // Deduct from Physical Stock (Items table)
+            const [itemRows] = await connection.query("SELECT stock_quantity FROM items WHERE Item_Code = ? FOR UPDATE", [itemCode]);
+            if (itemRows.length === 0) throw new Error(`Item ${itemCode} not found in inventory.`);
+
+            const currentQty = parseFloat(itemRows[0].stock_quantity);
+
+            // Note: Draft approvals won't currently map back to reservations natively in this simple schema since we didn't save sales_order_item_id in sales_invoice_items,
+            // but we can deduct physical safely. (If they reserved it, we would theoretically release it).
+            if (currentQty < qty) throw new Error(`Insufficient physical stock for ${itemCode}.`);
+
+            const newQty = currentQty - qty;
+            await connection.query("UPDATE items SET stock_quantity = ? WHERE Item_Code = ?", [newQty, itemCode]);
+
+            // Record into Stock Movements
+            await connection.query(`
+                INSERT INTO stock_movements (item_code, movement_type, quantity_change, quantity_after, reference_id, reason, movement_date)
+                VALUES (?, 'sales', ?, ?, ?, ?, NOW())
+            `, [itemCode, -qty, newQty, invoice.invoice_number, `Draft Approval: Sales Invoice`]);
+        }
+
+        // Process Payment Log if payment made
+        if (parseFloat(invoice.amount_paid) > 0) {
+            await connection.query(`
+                INSERT INTO payments (reference_id, type, entity_id, amount, method, payment_date)
+                VALUES (?, 'CUSTOMER', ?, ?, ?, NOW())
+            `, [invoice.invoice_number, invoice.customer_id, invoice.amount_paid, invoice.payment_method || 'Cash']);
+        }
+
+        // Update status
+        await connection.query("UPDATE sales_invoices SET status = 'POSTED' WHERE id = ?", [invoiceId]);
+
+        await connection.commit();
+        res.json({ success: true, message: "Draft successfully approved and posted." });
+    } catch (err) {
+        await connection.rollback();
+        console.error("Draft approval failed:", err);
+        res.status(400).json({ success: false, message: err.message || "Failed to approve draft" });
     } finally {
         connection.release();
     }

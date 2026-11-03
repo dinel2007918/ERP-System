@@ -1,0 +1,32 @@
+{
+  "status": "OK",
+  "tables": {
+    "brands": 1,
+    "customer_payments": 1,
+    "customers": 4,
+    "group_codes": 3,
+    "items": 2,
+    "payment_allocations": 1,
+    "payments": 0,
+    "purchase_invoice_items": 1,
+    "purchase_invoices": 1,
+    "purchase_return_items": 1,
+    "purchase_returns": 1,
+    "roles": 3,
+    "sales_invoice_items": 3,
+    "sales_invoices": 3,
+    "sales_order_items": 0,
+    "sales_orders": 0,
+    "sales_return_items": 1,
+    "sales_returns": 1,
+    "settlements": 0,
+    "stock_movements": 22,
+    "stock_reservations": 0,
+    "supplier_payments": 1,
+    "supplier_settlements": 1,
+    "suppliers": 1,
+    "type_codes": 2,
+    "user_sessions": 2,
+    "users": 2
+  }
+}

@@ -1,0 +1,151 @@
+.dashboard-container {
+    padding: 30px;
+    background: #f8fafc;
+    min-height: calc(100vh - 70px);
+    font-family: 'Inter', sans-serif;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.dashboard-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 25px;
+    margin-bottom: 35px;
+}
+
+.metric-card {
+    border-radius: 6px;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card.sales {
+    background: #38bdf8;
+}
+
+.metric-card.purchase {
+    background: #4ade80;
+}
+
+.metric-card.payments {
+    background: #f59e0b;
+}
+
+.metric-card.profit {
+    background: #ef4444;
+}
+
+.metric-content {
+    padding: 25px;
+    position: relative;
+    z-index: 1;
+}
+
+.metric-value {
+    font-size: 36px;
+    font-weight: 800;
+    margin: 0 0 5px 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.metric-label {
+    font-size: 16px;
+    opacity: 0.9;
+    margin: 0;
+    font-weight: 500;
+}
+
+.metric-footer {
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #475569;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.metric-footer:hover {
+    background: white;
+}
+
+.metric-icon {
+    position: absolute;
+    right: 20px;
+    top: 25px;
+    opacity: 0.2;
+    z-index: 0;
+}
+
+.metric-icon svg {
+    width: 70px;
+    height: 70px;
+}
+
+/* Graphical Panel */
+.dashboard-graph-panel {
+    background: #5eead4;
+    /* Teal color mimicking the reference image */
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.graph-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+    color: white;
+}
+
+.graph-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+    stroke: rgba(255, 255, 255, 0.2);
+}
+
+.recharts-text {
+    fill: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Custom Tooltip Styling */
+.custom-tooltip {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #e2e8f0;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.custom-tooltip .label {
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 10px 0;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 5px;
+}

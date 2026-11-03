@@ -17,7 +17,17 @@ async function getAvailableStock(connection, itemCode) {
     `, [itemCode]);
 
     const activeReserved = parseFloat(resRows[0].total_reserved) || 0;
-    return physicalQuantity - activeReserved;
+
+    const [draftRows] = await connection.query(`
+        SELECT COALESCE(SUM(sii.quantity), 0) AS total_draft 
+        FROM sales_invoice_items sii
+        JOIN sales_invoices si ON sii.invoice_id = si.id
+        WHERE sii.item_code = ? AND si.status = 'DRAFT'
+    `, [itemCode]);
+
+    const activeDrafts = parseFloat(draftRows[0].total_draft) || 0;
+
+    return physicalQuantity - activeReserved - activeDrafts;
 }
 
 // 1. POST /api/sales-orders (Create Order)
