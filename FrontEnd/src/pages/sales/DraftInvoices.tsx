@@ -49,15 +49,21 @@ export default function DraftInvoices({ setPage, setPassData }: { setPage?: (p: 
     };
 
     const handleReject = async (invoiceId: string) => {
-        if (!window.confirm("Reject and remove this draft order? This cannot be undone.")) return;
+        const reason = window.prompt("Enter a reason for rejecting this invoice order:");
+        if (reason === null) return;
+        if (!reason.trim()) {
+            alert("A rejection reason is required.");
+            return;
+        }
         try {
             const res = await fetch(`http://localhost:5005/api/sales-invoices/${invoiceId}/cancel`, {
                 method: 'PUT',
-                headers: authHeader
+                headers: { ...authHeader, "Content-Type": "application/json" },
+                body: JSON.stringify({ reason: reason.trim() })
             });
             const data = await res.json();
             if (data.success) {
-                alert("Draft order rejected and removed.");
+                alert("Invoice order rejected.");
                 loadDrafts();
             } else {
                 alert(data.message || "Rejection failed.");
@@ -71,13 +77,13 @@ export default function DraftInvoices({ setPage, setPassData }: { setPage?: (p: 
 
     return (
         <div className="tab-section">
-            <h3 className="section-title">Draft Invoices</h3>
+            <h3 className="section-title">Pending Invoices</h3>
 
             {loading ? (
                 <div style={{ padding: '20px', color: '#64748b' }}>Loading drafts...</div>
             ) : drafts.length === 0 ? (
                 <div style={{ padding: '20px', color: '#64748b', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
-                    No draft invoices pending.
+                    No pending invoices.
                 </div>
             ) : (
                 <>

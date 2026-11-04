@@ -53,13 +53,14 @@ function Sidebar({ setPage, handleLogout }: SidebarProps) {
                 </>
             )}
 
-            {checkBlock(["invoice", "draft-invoices", "sales-management", "cashbill", "customerbill", "payment", "cash-refund", "payment-report"]) && (
+            {checkBlock(["invoice", "draft-invoices", "to-ship", "sales-management", "cashbill", "customerbill", "payment", "cash-refund", "payment-report"]) && (
                 <>
                     <button onClick={() => toggleMenu("sales")}>sales{openMenu === "sales" ? "▲" : "▼"}</button>
                     {openMenu === "sales" && (
                         <div className="submenu">
                             {canAccess("invoice") && <button onClick={() => setPage("invoice")}>Sales invoice</button>}
-                            {(canAccess("draft-invoices") || hasInvoicePostAccess) && <button onClick={() => setPage("draft-invoices")}>Draft Invoices</button>}
+                            {(canAccess("draft-invoices") || hasInvoicePostAccess) && <button onClick={() => setPage("draft-invoices")}>Pending Invoices</button>}
+                            {canAccess("to-ship") && <button onClick={() => setPage("to-ship")}>To Ship</button>}
                             {canAccess("sales-management") && <button onClick={() => setPage("sales-management")}>Sales Management</button>}
                             {canAccess("cashbill") && <button onClick={() => setPage("cashbill")}>Sales cancel</button>}
                             {canAccess("customerbill") && <button onClick={() => setPage("customerbill")}>Sales return</button>}

@@ -130,7 +130,7 @@ router.get("/:id/inquiry", async (req, res) => {
     const connection = await promiseDb.getConnection();
     try {
         const [invoices] = await connection.query(`
-            SELECT id, invoice_number, invoice_date as date, grand_total, amount_paid, (grand_total - amount_paid) as balance, status 
+            SELECT id, invoice_number, invoice_date as date, grand_total, amount_paid, (grand_total - amount_paid) as balance, status, rejection_reason, shipping_method, courier_name, shipping_status
             FROM sales_invoices 
             WHERE customer_id = ? 
             ORDER BY invoice_date DESC

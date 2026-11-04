@@ -111,15 +111,15 @@ export default function SalesOrder({ setPage }: any) {
         setShowItemDropdown(false);
     };
 
-    const updateItemQty = (index: number, newQty: number) => {
+    const updateItemQty = (index: number, newQty: string) => {
         const updated = [...orderItems];
         const item = updated[index];
-        if (newQty > item.availableStock) {
+        if (newQty !== "" && Number(newQty) > item.availableStock) {
             alert(`Insufficient active stock! Only ${item.availableStock} available to reserve.`);
-            newQty = item.availableStock;
+            newQty = String(item.availableStock);
         }
         item.quantity = newQty;
-        item.lineTotal = (item.unitPrice - item.discount) * newQty;
+        item.lineTotal = (item.unitPrice - item.discount) * (Number(newQty) || 0);
         setOrderItems(updated);
     };
 
@@ -132,6 +132,9 @@ export default function SalesOrder({ setPage }: any) {
     const saveOrder = async () => {
         if (!selectedCustomer) return alert("Select a customer first");
         if (orderItems.length === 0) return alert("Add at least one item");
+        if (orderItems.some(item => !Number.isFinite(Number(item.quantity)) || Number(item.quantity) <= 0)) {
+            return alert("Enter a quantity greater than zero for every order item.");
+        }
 
         setIsSaving(true);
         const payload = {
@@ -141,7 +144,7 @@ export default function SalesOrder({ setPage }: any) {
             subtotal,
             discountTotal: totalDiscount,
             grandTotal,
-            items: orderItems
+            items: orderItems.map(item => ({ ...item, quantity: Number(item.quantity) }))
         };
 
         try {
@@ -276,7 +279,7 @@ export default function SalesOrder({ setPage }: any) {
                                     <td style={{ padding: '10px' }}>{itm.description}</td>
                                     <td style={{ padding: '10px', textAlign: 'center', color: '#16a34a' }}>{itm.availableStock}</td>
                                     <td style={{ padding: '10px' }}>
-                                        <input type="number" min="1" max={itm.availableStock} value={itm.quantity} onChange={(e) => updateItemQty(idx, Number(e.target.value))} className="form-input" style={{ padding: '5px' }} />
+                                        <input type="number" min="1" max={itm.availableStock} value={itm.quantity} onChange={(e) => updateItemQty(idx, e.target.value)} className="form-input" style={{ padding: '5px' }} />
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'right' }}>{itm.unitPrice.toFixed(2)}</td>
                                     <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>{itm.lineTotal.toFixed(2)}</td>

@@ -8,6 +8,14 @@ export default function CustomerInquiry() {
     const [customerData, setCustomerData] = useState<any>(null);
     const [ledger, setLedger] = useState<any>(null);
     const [activeTab, setActiveTab] = useState("INVOICES");
+    const [invoiceFilter, setInvoiceFilter] = useState("ALL");
+
+    const filteredInvoices = (ledger?.invoices || []).filter((invoice: any) => {
+        if (invoiceFilter === "TO_SHIP" || invoiceFilter === "SHIPPED") {
+            return invoice.status === "POSTED" && invoice.shipping_status === invoiceFilter;
+        }
+        return invoiceFilter === "ALL" || invoice.status === invoiceFilter;
+    });
 
     // Search mapping hook
     useEffect(() => {
@@ -149,10 +157,24 @@ export default function CustomerInquiry() {
                         </h3>
 
                         {activeTab === 'INVOICES' && (
+                            <>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    Invoice filter
+                                    <select className="form-input" value={invoiceFilter} onChange={e => setInvoiceFilter(e.target.value)} style={{ width: 'auto' }}>
+                                        <option value="ALL">All invoices</option>
+                                        <option value="DRAFT">Pending approval</option>
+                                        <option value="POSTED">Approved / posted</option>
+                                        <option value="TO_SHIP">To ship</option>
+                                        <option value="SHIPPED">Shipped</option>
+                                        <option value="REJECTED">Rejected</option>
+                                    </select>
+                                </label>
+                            </div>
                             <table className="custom-table">
-                                <thead><tr><th>Invoice #</th><th>Date</th><th style={{ textAlign: 'right' }}>Total</th><th style={{ textAlign: 'right' }}>Paid</th><th style={{ textAlign: 'right' }}>Balance</th><th>Status</th></tr></thead>
+                                <thead><tr><th>Invoice #</th><th>Date</th><th style={{ textAlign: 'right' }}>Total</th><th style={{ textAlign: 'right' }}>Paid</th><th style={{ textAlign: 'right' }}>Balance</th><th>Invoice Status</th><th>Shipping</th></tr></thead>
                                 <tbody>
-                                    {ledger.invoices.map((inv: any) => (
+                                    {filteredInvoices.map((inv: any) => (
                                         <tr key={inv.id}>
                                             <td>{inv.invoice_number}</td>
                                             <td>{new Date(inv.date).toLocaleDateString()}</td>
@@ -164,17 +186,20 @@ export default function CustomerInquiry() {
                                             <td>
                                                 <span style={{
                                                     padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold',
-                                                    backgroundColor: inv.status === 'DRAFT' ? '#fef3c7' : '#dcfce7',
-                                                    color: inv.status === 'DRAFT' ? '#d97706' : '#166534'
+                                                    backgroundColor: inv.status === 'DRAFT' ? '#fef3c7' : inv.status === 'REJECTED' ? '#fee2e2' : '#dcfce7',
+                                                    color: inv.status === 'DRAFT' ? '#d97706' : inv.status === 'REJECTED' ? '#b91c1c' : '#166534'
                                                 }}>
                                                     {inv.status}
                                                 </span>
+                                                {inv.rejection_reason && <div style={{ marginTop: '5px', color: '#b91c1c', fontSize: '12px' }}>{inv.rejection_reason}</div>}
                                             </td>
+                                            <td>{inv.status === 'POSTED' ? (inv.shipping_status || 'TO_SHIP') : '-'}</td>
                                         </tr>
                                     ))}
-                                    {ledger.invoices.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', color: '#64748b' }}>No Invoices found</td></tr>}
+                                    {filteredInvoices.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center', color: '#64748b' }}>No invoices match this filter</td></tr>}
                                 </tbody>
                             </table>
+                            </>
                         )}
 
                         {activeTab === 'RETURNS' && (

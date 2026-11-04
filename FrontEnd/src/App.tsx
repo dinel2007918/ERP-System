@@ -22,6 +22,7 @@ import CashRefund from "./pages/sales/CashRefund";
 import SalesReport from "./pages/sales/SalesReport";
 import InvoicePrint from "./pages/sales/InvoicePrint";
 import DraftInvoices from "./pages/sales/DraftInvoices";
+import ToShip from "./pages/sales/ToShip";
 
 // customers
 import NewCustomer from "./pages/customers/NewCustomer";
@@ -56,7 +57,8 @@ const pageTitles: Record<string, string> = {
     "sales-order": "Sales Order",
     "pending-orders": "Pending Orders",
     "invoice": "Sales Invoice",
-    "draft-invoices": "Draft Invoices Config",
+    "draft-invoices": "Pending Invoices",
+    "to-ship": "To Ship",
     "sales-management": "Sales Management",
     "cashbill": "Sales Cancel",
     "customerbill": "Sales Return",
@@ -121,6 +123,7 @@ function App() {
                     {page === "pending-orders" && <PendingOrders setPage={setPage} setPassData={setPassData} />}
                     {page === "invoice" && <SalesInvoice setPage={setPage} passData={passData} setPassData={setPassData} />}
                     {page === "draft-invoices" && <DraftInvoices setPage={setPage} setPassData={setPassData} />}
+                    {page === "to-ship" && <ToShip />}
                     {page === "sales-management" && <SalesManagement setPage={setPage} setPassData={setPassData} />}
                     {page === "cashbill" && <SalesCancel passData={passData} setPage={setPage} />}
                     {page === "customerbill" && <SalesReturn setPage={setPage} setPassData={setPassData} passData={passData} />}

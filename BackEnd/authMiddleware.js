@@ -20,7 +20,7 @@ export const authenticateToken = async (req, res, next) => {
     const connection = promiseDb.promise ? await promiseDb.promise().getConnection() : promiseDb;
     try {
         const [sessions] = await connection.query(`
-            SELECT s.user_id, u.username, r.permissions
+            SELECT s.user_id, u.username, u.invoice_post_access, u.privileges, r.permissions
             FROM user_sessions s
             JOIN users u ON s.user_id = u.id
             LEFT JOIN roles r ON u.role_id = r.id
@@ -36,7 +36,9 @@ export const authenticateToken = async (req, res, next) => {
         req.user = {
             id: session.user_id,
             username: session.username,
-            permissions: session.permissions ? JSON.parse(session.permissions) : []
+            permissions: session.permissions ? JSON.parse(session.permissions) : [],
+            invoice_post_access: !!session.invoice_post_access,
+            privileges: session.privileges ? (typeof session.privileges === 'string' ? JSON.parse(session.privileges) : session.privileges) : []
         };
 
         next();

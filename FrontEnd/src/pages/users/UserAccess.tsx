@@ -112,7 +112,8 @@ const PRIVILEGE_CATEGORIES = {
     ],
     "Sales": [
         { id: "invoice", name: "Sales Invoice" },
-        { id: "draft-invoices", name: "Draft Invoices" },
+        { id: "draft-invoices", name: "Pending Invoices" },
+        { id: "to-ship", name: "To Ship" },
         { id: "sales-management", name: "Sales Management" },
         { id: "cashbill", name: "Sales Cancel" },
         { id: "customerbill", name: "Sales Return" },
@@ -198,7 +199,7 @@ function UserPrivileges({ selectedUser, onSave, onCancel }: { selectedUser: any,
                 <label><input type="checkbox" checked={access.profit_margin_access} onChange={e => setAccess({ ...access, profit_margin_access: e.target.checked })} /> Profit Margin Access</label>
                 <label><input type="checkbox" checked={access.price_modify} onChange={e => setAccess({ ...access, price_modify: e.target.checked })} /> Price Modify</label>
                 <label><input type="checkbox" checked={access.dashboard_access} onChange={e => setAccess({ ...access, dashboard_access: e.target.checked })} /> Dashboard Access (Phase 7)</label>
-                <label><input type="checkbox" checked={access.invoice_post_access} onChange={e => setAccess({ ...access, invoice_post_access: e.target.checked })} /> Post Sales Invoices (Draft Approval)</label>
+                <label><input type="checkbox" checked={access.invoice_post_access} onChange={e => setAccess({ ...access, invoice_post_access: e.target.checked })} /> Post Sales Invoices / Approve Pending Invoices</label>
             </div>
 
             <h4 style={{ marginTop: '30px', color: '#1e293b' }}>Granular Page-Level Privileges Tree</h4>

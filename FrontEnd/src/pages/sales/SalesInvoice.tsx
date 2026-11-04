@@ -8,6 +8,8 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
     const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
     const [poNumber, setPoNumber] = useState("");
     const [note, setNote] = useState("");
+    const [shippingMethod, setShippingMethod] = useState("");
+    const [courierName, setCourierName] = useState("");
 
     const [sourceOrder, setSourceOrder] = useState<any>(null);
     const [isConverting, setIsConverting] = useState(false);
@@ -204,18 +206,18 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
         setShowItemDropdown(false);
     };
 
-    const updateItemQty = (index: number, newQty: number) => {
+    const updateItemQty = (index: number, newQty: string) => {
         const updated = [...orderItems];
         const item = updated[index];
 
         let maxAllowed = sourceOrder ? item.maxQuantity : item.availableStock;
 
-        if (newQty > maxAllowed) {
+        if (newQty !== "" && Number(newQty) > maxAllowed) {
             alert(`Maximum allowed quantity for this line is ${maxAllowed}.`);
-            newQty = maxAllowed;
+            newQty = String(maxAllowed);
         }
         item.quantity = newQty;
-        item.lineTotal = (item.unitPrice - item.discount) * newQty;
+        item.lineTotal = (item.unitPrice - item.discount) * (Number(newQty) || 0);
         setOrderItems(updated);
     };
 
@@ -228,6 +230,9 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
     const saveInvoice = async (mode: 'order' | 'save') => {
         if (!selectedCustomer) return alert("Select a customer first");
         if (orderItems.length === 0) return alert("Add at least one item to invoice");
+        if (orderItems.some(item => !Number.isFinite(Number(item.quantity)) || Number(item.quantity) <= 0)) {
+            return alert("Enter a quantity greater than zero for every invoice item.");
+        }
 
         const isDraft = mode === 'order';
 
@@ -242,8 +247,10 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
             grandTotal,
             amountPaid: parseFloat(amountPaid) || 0,
             paymentMethod,
+            shippingMethod,
+            courierName,
             status: isDraft ? 'DRAFT' : 'POSTED',
-            items: orderItems
+            items: orderItems.map(item => ({ ...item, quantity: Number(item.quantity) }))
         };
 
         try {
@@ -255,8 +262,18 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
             const data = await res.json();
             if (data.success) {
                 if (isDraft) {
-                    // ORDER: go to draft invoices page
-                    if (setPage) setPage("draft-invoices");
+                    if (hasPostAccess) {
+                        if (setPage) setPage("draft-invoices");
+                    } else {
+                        alert("Invoice order submitted for approval.");
+                        setSelectedCustomer(null);
+                        setCustomerSearch("");
+                        setPoNumber("");
+                        setNote("");
+                        setOrderItems([]);
+                        setAmountPaid("");
+                        setSourceOrder(null);
+                    }
                 } else {
                     // SAVE: go to print page
                     if (setPage) {
@@ -353,6 +370,20 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
                                 <label>Notes</label>
                                 <input type="text" className="form-input" value={note} onChange={e => setNote(e.target.value)} />
                             </div>
+                            <div>
+                                <label>Shipping Method</label>
+                                <select className="form-input" value={shippingMethod} onChange={e => setShippingMethod(e.target.value)}>
+                                    <option value="">Select shipping method</option>
+                                    <option value="Courier">Courier</option>
+                                    <option value="Company Delivery">Company Delivery</option>
+                                    <option value="Customer Pickup">Customer Pickup</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Courier / Delivery Provider</label>
+                                <input type="text" className="form-input" value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Courier or delivery provider" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -396,7 +427,7 @@ export default function SalesInvoice({ passData, setPassData, setPage }: any) {
                                     <td style={{ padding: '10px' }}>{itm.itemCode}</td>
                                     <td style={{ padding: '10px' }}>{itm.description}</td>
                                     <td style={{ padding: '10px' }}>
-                                        <input type="number" min="1" value={itm.quantity} onChange={(e) => updateItemQty(idx, Number(e.target.value))} className="form-input" style={{ padding: '5px' }} />
+                                        <input type="number" min="1" value={itm.quantity} onChange={(e) => updateItemQty(idx, e.target.value)} className="form-input" style={{ padding: '5px' }} />
                                         {sourceOrder && <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px' }}>Max: {itm.maxQuantity} (Order)</div>}
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'right' }}>{itm.unitPrice.toFixed(2)}</td>
